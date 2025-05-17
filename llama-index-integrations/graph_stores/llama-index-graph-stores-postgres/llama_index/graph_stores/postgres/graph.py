@@ -135,7 +135,27 @@ subject = relationship("EntityModel", foreign_keys=[subject_id])
 
     def get(self, subj: str) -> List[List[str]]:
         """Get triplets."""
-        with Session(self._engine) as session:
+def get(self, subj: str) -> List[List[str]]:
+        """Get triplets."""
+        try:
+            with Session(self._engine) as session:
+                rels = (
+                    session.query(self._rel_model)
+                    .options(
+                        joinedload(self._rel_model.subject),
+                        joinedload(self._rel_model.object),
+                    )
+                    .filter(self._rel_model.subject.has(name=subj))
+                    .all()
+                )
+                return [[rel.description, rel.object.name] for rel in rels]
+        except SQLAlchemyError as e:
+            # TODO: Implement proper logging
+            print(f"Database error occurred: {str(e)}")
+            return []
+
+    def get_rel_map(
+        self, subjs: Optional[List[str]] = None, depth: int = 2, limit: int = 30
             rels = (
                 session.query(self._rel_model)
                 .options(

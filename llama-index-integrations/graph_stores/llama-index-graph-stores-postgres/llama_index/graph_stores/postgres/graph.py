@@ -323,7 +323,17 @@ def delete(self, subj: str, rel: str, obj: str) -> None:
             if not entity_was_referenced(obj):
                 delete_entity(obj)
 
-    def query(self, query: str, param_map: Optional[Dict[str, Any]] = {}) -> Any:
+def query(self, query: str, param_map: Optional[Dict[str, Any]] = {}) -> Any:
+        """Query the graph store with statement and parameters."""
+        with Session(self._engine) as session:
+            try:
+                return session.execute(query, param_map).fetchall()
+            except Exception as e:
+                # TODO: Implement proper error handling and logging
+                raise RuntimeError(f"Database query failed: {str(e)}")
+            
+    def get_schema(self, refresh: bool = False) -> str:
+        """Get the schema of the graph store."""
         """Query the graph store with statement and parameters."""
         with Session(self._engine) as session:
             return session.execute(query, param_map).fetchall()

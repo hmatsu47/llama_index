@@ -172,7 +172,52 @@ def get(self, subj: str) -> List[List[str]]:
     ) -> Dict[str, List[List[str]]]:
         """Get depth-aware rel map."""
         rel_map: Dict[str, List[List[str]]] = defaultdict(list)
-        with Session(self._engine) as session:
+def get(self, subj: str) -> List[List[str]]:
+        """Get triplets."""
+        try:
+            with Session(self._engine) as session:
+                rels = (
+                    session.query(self._rel_model)
+                    .options(
+                        joinedload(self._rel_model.subject),
+                        joinedload(self._rel_model.object),
+                    )
+                    .filter(self._rel_model.subject.has(name=subj))
+                    .all()
+                )
+                return [[rel.description, rel.object.name] for rel in rels]
+        except Exception as e:
+            # TODO: Implement proper error logging
+            print(f"Error in get method: {str(e)}")
+            return []
+
+    def get_rel_map(
+        self, subjs: Optional[List[str]] = None, depth: int = 2, limit: int = 30
+    ) -> Dict[str, List[List[str]]]:
+        """Get depth-aware rel map."""
+        rel_map: Dict[str, List[List[str]]] = defaultdict(list)
+        try:
+            with Session(self._engine) as session:
+                # `raw_rels`` is a list of tuples (depth, subject, description, object), ordered by depth
+                # Example:
+                # +-------+------------------+------------------+------------------+
+                # | depth | subject          | description      | object           |
+                # +-------+------------------+------------------+------------------+
+                # |     1 | Software         | Mention in       | Footnotes        |
+                # |     1 | Viaweb           | Started by       | Paul graham      |
+                # |     2 | Paul graham      | Invited to       | Lisp conference  |
+                # |     2 | Paul graham      | Coded            | Bel              |
+                # +-------+------------------+------------------+------------------+
+                raw_rels = session.execute(
+                    sql.text(
+                        rel_depth_query.format(
+                            relation_table=self._relation_table_name,
+                            entity_table=self._entity_table_name,
+                        )
+                    ),
+                    {
+                        "subjs": subjs,
+                        "depth": depth,
             # `raw_rels`` is a list of tuples (depth, subject, description, object), ordered by depth
             # Example:
             # +-------+------------------+------------------+------------------+

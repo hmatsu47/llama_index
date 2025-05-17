@@ -72,7 +72,15 @@ def get_or_create(session: Session, model, **kwargs):
     else:
         instance = model(**kwargs)
         session.add(instance)
-        session.commit()
+else:
+        instance = model(**kwargs)
+        session.add(instance)
+        try:
+            session.commit()
+        except exc.SQLAlchemyError as e:
+            session.rollback()
+            raise ValueError("An error occurred while creating the instance.") from e
+        return instance, True
         return instance, True
 
 

@@ -268,8 +268,3 @@ class PostgresGraphStore(GraphStore):
             except Exception as e:
                 # TODO: Implement proper error handling and logging
                 raise RuntimeError(f"Database query failed: {str(e)}")
-            
-    # def get_schema(self, refresh: bool = False) -> str:
-    #     """Get the schema of the graph store."""
-    #     with Session(self._engine) as session:
-    #         return session.execute(query, param_map).fetchall()

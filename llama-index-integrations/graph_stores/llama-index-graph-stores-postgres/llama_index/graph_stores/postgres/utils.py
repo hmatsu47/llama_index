@@ -10,21 +10,20 @@ def check_db_availability(engine: Engine, check_vector: bool = False) -> None:
             else:
                 conn.execute(sql.text("""SELECT 1;"""))
     except exc.DatabaseError as e:
-        if hasattr(e, 'orig') and hasattr(e.orig, 'args') and len(e.orig.args) > 0:
-            db_error_code = e.orig.args[0]
-            if db_error_code == 28000:  # Authentication error
-                raise ValueError(
-                    "Could not connect to the PostgreSQL server. "
-                    "Please check if the connection string is correct."
-                ) from e
-            elif "vector" in str(e):
+        if hasattr(e, 'orig') and hasattr(e.orig, 'pgcode'):
+            if e.orig.pgcode == '42883':  # undefined_function
                 raise ValueError(
                     "Please confirm if your PostgreSQL supports vector search. "
                     "You can check this by running the query `SELECT '[1]'::vector` in PostgreSQL."
                 ) from e
+            elif e.orig.pgcode == '28P01':  # invalid_password
+                raise ValueError(
+                    "Could not connect to the PostgreSQL server. "
+                    "Please check if the connection string is correct."
+                ) from e
             else:
                 raise ValueError(
-                    "An error occurred while checking the database availability."
+                    f"An error occurred while checking the database availability: {e.orig.pgcode}"
                 ) from e
         else:
             raise ValueError(

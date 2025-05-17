@@ -53,7 +53,7 @@ LIMIT :limit;
 """
 
 
-class PostgreSQLGraphStore(GraphStore):
+class PostgresGraphStore(GraphStore):
     def __init__(
         self,
         db_connection_string: str,
@@ -106,7 +106,7 @@ class PostgreSQLGraphStore(GraphStore):
         return EntityModel, RelationshipModel
 
     @property
-    def client(self) -> Any:
+    def get_client(self) -> Any:
         """Get client."""
         return self._engine
 
@@ -219,7 +219,3 @@ class PostgreSQLGraphStore(GraphStore):
         """Query the graph store with statement and parameters."""
         with Session(self._engine) as session:
             return session.execute(query, param_map).fetchall()
-            
-    def get_schema(self, refresh: bool = False) -> str:
-        """Get the schema of the graph store."""
-        return ""

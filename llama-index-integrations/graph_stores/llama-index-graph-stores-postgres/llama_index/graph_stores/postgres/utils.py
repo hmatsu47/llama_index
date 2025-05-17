@@ -9,19 +9,6 @@ def check_db_availability(engine: Engine, check_vector: bool = False) -> None:
                 conn.execute(sql.text("""SELECT '[1]'::vector;"""))
             else:
                 conn.execute(sql.text("""SELECT 1;"""))
-from sqlalchemy.orm import Session
-from sqlalchemy import Engine, exc, sql
-
-# Import more specific exception types
-from sqlalchemy.exc import OperationalError, ProgrammingError
-
-def check_db_availability(engine: Engine, check_vector: bool = False) -> None:
-    try:
-        with engine.connect() as conn:
-            if check_vector:
-                conn.execute(sql.text("""SELECT '[1]'::vector;"""))
-            else:
-                conn.execute(sql.text("""SELECT 1;"""))
     except OperationalError as e:
         if hasattr(e, 'orig') and hasattr(e.orig, 'args') and len(e.orig.args) > 0:
             db_error_code = e.orig.args[0]
@@ -72,15 +59,11 @@ def get_or_create(session: Session, model, **kwargs):
     else:
         instance = model(**kwargs)
         session.add(instance)
-else:
-        instance = model(**kwargs)
-        session.add(instance)
         try:
             session.commit()
         except exc.SQLAlchemyError as e:
             session.rollback()
             raise ValueError("An error occurred while creating the instance.") from e
-        return instance, True
         return instance, True
 
 

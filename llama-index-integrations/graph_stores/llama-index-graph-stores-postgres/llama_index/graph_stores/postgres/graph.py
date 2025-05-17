@@ -102,17 +102,11 @@ class PostgresGraphStore(GraphStore):
             subject = relationship("EntityModel", foreign_keys=[subject_id])
             object = relationship("EntityModel", foreign_keys=[object_id])
 
-subject = relationship("EntityModel", foreign_keys=[subject_id])
-            object = relationship("EntityModel", foreign_keys=[object_id])
-
         try:
             Base.metadata.create_all(self._engine)
         except SQLAlchemyError as e:
             # TODO: Implement proper error handling and logging
             raise RuntimeError(f"Failed to create database schema: {str(e)}")
-        return EntityModel, RelationshipModel
-
-    @property
         return EntityModel, RelationshipModel
 
     @property
@@ -135,8 +129,6 @@ subject = relationship("EntityModel", foreign_keys=[subject_id])
 
     def get(self, subj: str) -> List[List[str]]:
         """Get triplets."""
-def get(self, subj: str) -> List[List[str]]:
-        """Get triplets."""
         try:
             with Session(self._engine) as session:
                 rels = (
@@ -152,43 +144,6 @@ def get(self, subj: str) -> List[List[str]]:
         except SQLAlchemyError as e:
             # TODO: Implement proper logging
             print(f"Database error occurred: {str(e)}")
-            return []
-
-    def get_rel_map(
-        self, subjs: Optional[List[str]] = None, depth: int = 2, limit: int = 30
-            rels = (
-                session.query(self._rel_model)
-                .options(
-                    joinedload(self._rel_model.subject),
-                    joinedload(self._rel_model.object),
-                )
-                .filter(self._rel_model.subject.has(name=subj))
-                .all()
-            )
-            return [[rel.description, rel.object.name] for rel in rels]
-
-    def get_rel_map(
-        self, subjs: Optional[List[str]] = None, depth: int = 2, limit: int = 30
-    ) -> Dict[str, List[List[str]]]:
-        """Get depth-aware rel map."""
-        rel_map: Dict[str, List[List[str]]] = defaultdict(list)
-def get(self, subj: str) -> List[List[str]]:
-        """Get triplets."""
-        try:
-            with Session(self._engine) as session:
-                rels = (
-                    session.query(self._rel_model)
-                    .options(
-                        joinedload(self._rel_model.subject),
-                        joinedload(self._rel_model.object),
-                    )
-                    .filter(self._rel_model.subject.has(name=subj))
-                    .all()
-                )
-                return [[rel.description, rel.object.name] for rel in rels]
-        except Exception as e:
-            # TODO: Implement proper error logging
-            print(f"Error in get method: {str(e)}")
             return []
 
     def get_rel_map(
@@ -256,8 +211,6 @@ def get(self, subj: str) -> List[List[str]]:
 
     def delete(self, subj: str, rel: str, obj: str) -> None:
         """Delete triplet."""
-def delete(self, subj: str, rel: str, obj: str) -> None:
-        """Delete triplet."""
         with Session(self._engine) as session:
             try:
                 stmt = delete(self._rel_model).where(
@@ -323,7 +276,7 @@ def delete(self, subj: str, rel: str, obj: str) -> None:
             if not entity_was_referenced(obj):
                 delete_entity(obj)
 
-def query(self, query: str, param_map: Optional[Dict[str, Any]] = {}) -> Any:
+    def query(self, query: str, param_map: Optional[Dict[str, Any]] = {}) -> Any:
         """Query the graph store with statement and parameters."""
         with Session(self._engine) as session:
             try:
@@ -332,8 +285,7 @@ def query(self, query: str, param_map: Optional[Dict[str, Any]] = {}) -> Any:
                 # TODO: Implement proper error handling and logging
                 raise RuntimeError(f"Database query failed: {str(e)}")
             
-    def get_schema(self, refresh: bool = False) -> str:
-        """Get the schema of the graph store."""
-        """Query the graph store with statement and parameters."""
-        with Session(self._engine) as session:
-            return session.execute(query, param_map).fetchall()
+    # def get_schema(self, refresh: bool = False) -> str:
+    #     """Get the schema of the graph store."""
+    #     with Session(self._engine) as session:
+    #         return session.execute(query, param_map).fetchall()

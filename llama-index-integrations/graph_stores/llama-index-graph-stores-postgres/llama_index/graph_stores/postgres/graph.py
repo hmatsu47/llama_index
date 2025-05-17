@@ -102,7 +102,17 @@ class PostgresGraphStore(GraphStore):
             subject = relationship("EntityModel", foreign_keys=[subject_id])
             object = relationship("EntityModel", foreign_keys=[object_id])
 
-        Base.metadata.create_all(self._engine)
+subject = relationship("EntityModel", foreign_keys=[subject_id])
+            object = relationship("EntityModel", foreign_keys=[object_id])
+
+        try:
+            Base.metadata.create_all(self._engine)
+        except SQLAlchemyError as e:
+            # TODO: Implement proper error handling and logging
+            raise RuntimeError(f"Failed to create database schema: {str(e)}")
+        return EntityModel, RelationshipModel
+
+    @property
         return EntityModel, RelationshipModel
 
     @property

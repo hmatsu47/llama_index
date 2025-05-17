@@ -173,41 +173,25 @@ class PostgresGraphStore(GraphStore):
                     {
                         "subjs": subjs,
                         "depth": depth,
-            # `raw_rels`` is a list of tuples (depth, subject, description, object), ordered by depth
-            # Example:
-            # +-------+------------------+------------------+------------------+
-            # | depth | subject          | description      | object           |
-            # +-------+------------------+------------------+------------------+
-            # |     1 | Software         | Mention in       | Footnotes        |
-            # |     1 | Viaweb           | Started by       | Paul graham      |
-            # |     2 | Paul graham      | Invited to       | Lisp conference  |
-            # |     2 | Paul graham      | Coded            | Bel              |
-            # +-------+------------------+------------------+------------------+
-            raw_rels = session.execute(
-                sql.text(
-                    rel_depth_query.format(
-                        relation_table=self._relation_table_name,
-                        entity_table=self._entity_table_name,
-                    )
-                ),
-                {
-                    "subjs": subjs,
-                    "depth": depth,
-                    "limit": limit,
-                },
-            ).fetchall()
-            # `obj_reverse_map` is a dict of sets, where the key is a tuple (object, depth)
-            # and the value is a set of subjects that have the object at the previous depth
-            obj_reverse_map = defaultdict(set)
-            for depth, subj, rel, obj in raw_rels:
-                if depth == 1:
-                    rel_map[subj].append([subj, rel, obj])
-                    obj_reverse_map[(obj, depth)].update([subj])
-                else:
-                    for _subj in obj_reverse_map[(subj, depth - 1)]:
-                        rel_map[_subj].append([subj, rel, obj])
-                        obj_reverse_map[(obj, depth)].update([_subj])
-            return dict(rel_map)
+                        "limit": limit,
+                    },
+                ).fetchall()
+                # `obj_reverse_map` is a dict of sets, where the key is a tuple (object, depth)
+                # and the value is a set of subjects that have the object at the previous depth
+                obj_reverse_map = defaultdict(set)
+                for depth, subj, rel, obj in raw_rels:
+                    if depth == 1:
+                        rel_map[subj].append([subj, rel, obj])
+                        obj_reverse_map[(obj, depth)].update([subj])
+                    else:
+                        for _subj in obj_reverse_map[(subj, depth - 1)]:
+                            rel_map[_subj].append([subj, rel, obj])
+                            obj_reverse_map[(obj, depth)].update([_subj])
+                return dict(rel_map)
+        except SQLAlchemyError as e:
+            # TODO: Implement proper logging
+            print(f"Database error occurred: {str(e)}")
+            return []
 
     def delete(self, subj: str, rel: str, obj: str) -> None:
         """Delete triplet."""

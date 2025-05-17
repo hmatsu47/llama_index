@@ -9,7 +9,41 @@ def check_db_availability(engine: Engine, check_vector: bool = False) -> None:
                 conn.execute(sql.text("""SELECT '[1]'::vector;"""))
             else:
                 conn.execute(sql.text("""SELECT 1;"""))
-    except exc.DatabaseError as e:
+from sqlalchemy.orm import Session
+from sqlalchemy import Engine, exc, sql
+
+# Import more specific exception types
+from sqlalchemy.exc import OperationalError, ProgrammingError
+
+def check_db_availability(engine: Engine, check_vector: bool = False) -> None:
+    try:
+        with engine.connect() as conn:
+            if check_vector:
+                conn.execute(sql.text("""SELECT '[1]'::vector;"""))
+            else:
+                conn.execute(sql.text("""SELECT 1;"""))
+    except OperationalError as e:
+        if hasattr(e, 'orig') and hasattr(e.orig, 'args') and len(e.orig.args) > 0:
+            db_error_code = e.orig.args[0]
+            if db_error_code == 28000:  # Authentication error
+                raise ValueError(
+                    "Could not connect to the PostgreSQL server. "
+                    "Please check if the connection string is correct."
+                ) from e
+            else:
+                raise ValueError(
+                    "An error occurred while checking the database availability."
+                ) from e
+    except ProgrammingError as e:
+        if "vector" in str(e):
+            raise ValueError(
+                "Please confirm if your PostgreSQL supports vector search. "
+                "You can check this by running the query `SELECT '[1]'::vector` in PostgreSQL."
+            ) from e
+        else:
+            raise ValueError(
+                "An error occurred while checking the database availability."
+            ) from e
         if hasattr(e, 'orig') and hasattr(e.orig, 'pgcode'):
             if e.orig.pgcode == '42883':  # undefined_function
                 raise ValueError(

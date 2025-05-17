@@ -256,7 +256,40 @@ def get(self, subj: str) -> List[List[str]]:
 
     def delete(self, subj: str, rel: str, obj: str) -> None:
         """Delete triplet."""
+def delete(self, subj: str, rel: str, obj: str) -> None:
+        """Delete triplet."""
         with Session(self._engine) as session:
+            try:
+                stmt = delete(self._rel_model).where(
+                    self._rel_model.subject.has(name=subj),
+                    self._rel_model.description == rel,
+                    self._rel_model.object.has(name=obj),
+                )
+                result = session.execute(stmt)
+                session.commit()
+                # no rows affected, do not need to delete entities
+                if result.rowcount == 0:
+                    return
+
+                def delete_entity(entity_name: str):
+                    stmt = delete(self._entity_model).where(
+                        self._entity_model.name == entity_name
+                    )
+                    session.execute(stmt)
+                    session.commit()
+
+                def entity_was_referenced(entity_name: str):
+                    return (
+                        session.query(self._rel_model)
+                        .filter(
+                            self._rel_model.subject.has(name=entity_name)
+                            | self._rel_model.object.has(name=entity_name)
+                        )
+                        .one_or_none()
+                    )
+            except Exception as e:
+                session.rollback()
+                raise e
             stmt = delete(self._rel_model).where(
                 self._rel_model.subject.has(name=subj),
                 self._rel_model.description == rel,

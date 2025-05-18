@@ -18,13 +18,13 @@ dev = [
 name = "llama-index-graph-stores-postgres"
 version = "0.1.0"
 description = "llama-index graph stores postgres integration"
-authors = [{name = "llama-index"}]
+authors = [{name = "Your Name", email = "you@example.com"}]
 requires-python = ">=3.9,<4.0"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "pgvector>=0.2.3,<0.3.0",
-    "psycopg>=3.1.12,<4.0.0",
+    "psycopg>=3.1.12,<4",
+    "pgvector>=0.2.3,<0.3",
     "SQLAlchemy>=2.0.30,<3",
     "llama-index-core>=0.12.0,<0.13",
 ]

@@ -235,3 +235,194 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                 )
                 triplets.append([source, relation, target])
             return triplets
+            
+    def add_node(self, node: LabelledNode) -> None:
+        """Add node."""
+        with Session(self._engine) as session:
+            if isinstance(node, ChunkNode):
+                node_data = {
+                    "id": node.id,
+                    "text": node.text,
+                    "label": node.label,
+                    "properties": node.properties or {},
+                    "embedding": node.embedding if hasattr(node, "embedding") else None,
+                }
+            else:
+                node_data = {
+                    "id": node.id,
+                    "name": node.name,
+                    "label": node.label,
+                    "properties": node.properties or {},
+                    "embedding": node.embedding if hasattr(node, "embedding") else None,
+                }
+            
+            # Check if node exists
+            existing_node = session.query(self._node_model).filter_by(id=node.id).first()
+            if existing_node:
+                # Update existing node
+                for key, value in node_data.items():
+                    if value is not None:
+                        setattr(existing_node, key, value)
+            else:
+                # Create new node
+                new_node = self._node_model(**node_data)
+                session.add(new_node)
+            
+            session.commit()
+    
+    def add_nodes(self, nodes: List[LabelledNode]) -> None:
+        """Add nodes."""
+        for node in nodes:
+            self.add_node(node)
+    
+    def add_relation(self, relation: Relation) -> None:
+        """Add relation."""
+        with Session(self._engine) as session:
+            # Check if source and target nodes exist
+            source_node = session.query(self._node_model).filter_by(id=relation.source_id).first()
+            target_node = session.query(self._node_model).filter_by(id=relation.target_id).first()
+            
+            if not source_node or not target_node:
+                raise ValueError(f"Source or target node not found for relation: {relation}")
+            
+            relation_data = {
+                "label": relation.label,
+                "source_id": relation.source_id,
+                "target_id": relation.target_id,
+                "properties": relation.properties or {},
+            }
+            
+            # Check if relation exists
+            existing_relation = session.query(self._relation_model).filter_by(
+                source_id=relation.source_id,
+                target_id=relation.target_id,
+                label=relation.label
+            ).first()
+            
+            if existing_relation:
+                # Update existing relation
+                for key, value in relation_data.items():
+                    if value is not None:
+                        setattr(existing_relation, key, value)
+            else:
+                # Create new relation
+                new_relation = self._relation_model(**relation_data)
+                session.add(new_relation)
+            
+            session.commit()
+    
+    def add_relations(self, relations: List[Relation]) -> None:
+        """Add relations."""
+        for relation in relations:
+            self.add_relation(relation)
+    
+    def query_triplets(
+        self,
+        query: str,
+        param_map: Optional[Dict[str, Any]] = None,
+    ) -> List[Triplet]:
+        """Query triplets."""
+        with Session(self._engine) as session:
+            result = session.execute(sql.text(query), param_map or {})
+            triplets = []
+            for row in result:
+                # Convert row to triplet based on the query structure
+                # This is a simplified implementation and may need to be adjusted
+                # based on the actual query structure
+                if len(row) >= 3:
+                    source = EntityNode(
+                        name=row[0],
+                        label=row[1] if len(row) > 3 else "entity",
+                    )
+                    relation = Relation(
+                        label=row[2],
+                        source_id=source.id,
+                        target_id=row[3] if len(row) > 3 else None,
+                    )
+                    target = EntityNode(
+                        name=row[3] if len(row) > 3 else None,
+                        label=row[4] if len(row) > 4 else "entity",
+                    )
+                    triplets.append([source, relation, target])
+            return triplets
+    
+    def vector_search(
+        self,
+        query: VectorStoreQuery,
+        ids: Optional[List[str]] = None,
+    ) -> List[LabelledNode]:
+        """Vector search."""
+        if query.query_embedding is None:
+            raise ValueError("Query embedding is required for vector search")
+        
+        with Session(self._engine) as session:
+            # Build the query
+            db_query = session.query(
+                self._node_model,
+                self._node_model.embedding.cosine_distance(query.query_embedding).label("distance")
+            )
+            
+            # Apply filters
+            if ids:
+                db_query = db_query.filter(self._node_model.id.in_(ids))
+            
+            # Apply similarity threshold if provided
+            if query.similarity_top_k:
+                db_query = db_query.order_by("distance").limit(query.similarity_top_k)
+            
+            # Execute query
+            results = db_query.all()
+            
+            # Convert to nodes
+            nodes = []
+            for node, distance in results:
+                if node.text and node.name is None:
+                    nodes.append(
+                        ChunkNode(
+                            id=node.id,
+                            text=node.text,
+                            label=node.label,
+                            properties=remove_empty_values(node.properties),
+                            score=1.0 - distance,  # Convert distance to similarity score
+                        )
+                    )
+                else:
+                    nodes.append(
+                        EntityNode(
+                            name=node.name,
+                            label=node.label,
+                            properties=remove_empty_values(node.properties),
+                            score=1.0 - distance,  # Convert distance to similarity score
+                        )
+                    )
+            return nodes
+    
+    def delete_node(self, node_id: str) -> None:
+        """Delete node."""
+        with Session(self._engine) as session:
+            # First delete all relations involving this node
+            session.query(self._relation_model).filter(
+                (self._relation_model.source_id == node_id) | 
+                (self._relation_model.target_id == node_id)
+            ).delete(synchronize_session=False)
+            
+            # Then delete the node
+            session.query(self._node_model).filter_by(id=node_id).delete()
+            session.commit()
+    
+    def delete_relation(self, relation: Relation) -> None:
+        """Delete relation."""
+        with Session(self._engine) as session:
+            session.query(self._relation_model).filter_by(
+                source_id=relation.source_id,
+                target_id=relation.target_id,
+                label=relation.label
+            ).delete()
+            session.commit()
+    
+    def clear(self) -> None:
+        """Clear all nodes and relations."""
+        with Session(self._engine) as session:
+            session.query(self._relation_model).delete()
+            session.query(self._node_model).delete()
+            session.commit()

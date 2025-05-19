@@ -1,0 +1,70 @@
+version = 1
+revision = 2
+requires-python = ">=3.9, <4.0"
+resolution-markers = [
+    "python_full_version >= '3.11'",
+    "python_full_version == '3.10.*'",
+    "python_full_version >= '3.9.17' and python_full_version < '3.10'",
+    "python_full_version < '3.9.17'",
+]
+
+[[package]]
+name = "pgvector"
+version = "0.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/pgvector-0.8.0.tar.gz", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/pgvector-0.8.0-py3-none-any.whl", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" },
+]
+
+[[package]]
+name = "psycopg"
+version = "3.1.18"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/psycopg-3.1.18.tar.gz", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/psycopg-3.1.18-py3-none-any.whl", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" },
+]
+
+[[package]]
+name = "sqlalchemy"
+version = "2.0.30"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "greenlet", marker = "platform_machine == 'aarch64' or platform_machine == 'ppc64le' or platform_machine == 'x86_64' or platform_machine == 'amd64' or platform_machine == 'AMD64' or platform_machine == 'win32' or platform_machine == 'WIN32'" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/sqlalchemy-2.0.30.tar.gz", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/sqlalchemy-2.0.30-py3-none-any.whl", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" },
+]
+
+[[package]]
+name = "typing-extensions"
+version = "4.10.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/typing_extensions-4.10.0.tar.gz", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/typing_extensions-4.10.0-py3-none-any.whl", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" },
+]
+
+[[package]]
+name = "greenlet"
+version = "3.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/greenlet-3.2.1.tar.gz", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/greenlet-3.2.1-py3-none-any.whl", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" },
+]
+
+[[package]]
+name = "llama-index-core"
+version = "0.12.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/llama_index_core-0.12.0.tar.gz", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/e9/d2c2c4f8c1d4c1e9c3c6e5a7e9e9c7c3e2f1c8c8b3c9c9c5c9c9c9c9c9c9/llama_index_core-0.12.0-py3-none-any.whl", hash = "sha256:c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2" },
+]

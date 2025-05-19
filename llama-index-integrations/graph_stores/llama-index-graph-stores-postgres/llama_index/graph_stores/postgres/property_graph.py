@@ -168,8 +168,6 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                             properties=remove_empty_values(n.properties),
                         )
                     )
-            return nodes
-
     def get_triplets(
         self,
         entity_names: Optional[List[str]] = None,
@@ -234,4 +232,212 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                     properties=remove_empty_values(r.properties),
                 )
                 triplets.append([source, relation, target])
-            return triplets
+    def get_rel_map(
+        self,
+        graph_nodes: List[LabelledNode],
+        depth: int = 2,
+        limit: int = 30,
+        ignore_rels: Optional[List[str]] = None,
+    ) -> List[Triplet]:
+        """Get depth-aware rel map."""
+        triplets = []
+        ids = [node.id for node in graph_nodes]
+
+        if not ids:
+            return []
+
+        with Session(self._engine) as session:
+            result = session.execute(
+                sql.text(
+                    rel_depth_query.format(
+                        relation_table=self._relation_table_name,
+                        node_table=self._node_table_name,
+                    )
+                ),
+                {
+                    "ids": ids,
+                    "depth": depth,
+                    "limit": limit,
+                },
+            )
+
+            keys = result.keys()
+            raw_rels = [dict(zip(keys, row)) for row in result.fetchall()]
+
+            ignore_rels = ignore_rels or []
+            for row in raw_rels:
+                if row["rel_label"] in ignore_rels:
+                    continue
+
+                source = EntityNode(
+                    id=row["e1_id"],
+                    name=row["e1_name"],
+                    label=row["e1_label"],
+                    properties=json.loads(row["e1_properties"]),
+                )
+                target = EntityNode(
+                    id=row["e2_id"],
+                    name=row["e2_name"],
+                    label=row["e2_label"],
+                    properties=json.loads(row["e2_properties"]),
+                )
+                relation = Relation(
+                    label=row["rel_label"],
+                    source_id=source.id,
+                    target_id=target.id,
+                    properties=json.loads(row["rel_properties"]),
+                )
+                triplets.append([source, relation, target])
+        return triplets
+
+    def upsert_nodes(self, nodes: List[LabelledNode]) -> None:
+        """Upsert nodes."""
+        entity_list: List[EntityNode] = []
+        chunk_list: List[ChunkNode] = []
+        other_list: List[LabelledNode] = []
+
+        for item in nodes:
+            if isinstance(item, EntityNode):
+                entity_list.append(item)
+            elif isinstance(item, ChunkNode):
+                chunk_list.append(item)
+            else:
+                other_list.append(item)
+
+        with Session(self._engine) as session:
+            # TODO: use upsert instead of get_or_create
+            for entity in entity_list:
+                entity_instance, _ = get_or_create(
+                    session, self._node_model, id=entity.id
+                )
+                entity_instance.name = entity.name
+                entity_instance.label = entity.label
+                entity_instance.properties = entity.properties
+                entity_instance.embedding = entity.embedding
+                session.add(entity_instance)
+
+            for chunk in chunk_list:
+                chunk_instance, _ = get_or_create(
+                    session, self._node_model, id=chunk.id
+                )
+                chunk_instance.text = chunk.text
+                chunk_instance.label = chunk.label
+                chunk_instance.properties = chunk.properties
+                chunk_instance.embedding = chunk.embedding
+                session.add(chunk_instance)
+            session.commit()
+
+    def upsert_relations(self, relations: List[Relation]) -> None:
+        """Upsert relations."""
+        with Session(self._engine) as session:
+            for r in relations:
+                get_or_create(
+                    session,
+                    self._node_model,
+                    id=r.source_id,
+                )
+                get_or_create(
+                    session,
+                    self._node_model,
+                    id=r.target_id,
+                )
+                relation_instance, _ = get_or_create(
+                    session,
+                    self._relation_model,
+                    label=r.label,
+                    source_id=r.source_id,
+                    target_id=r.target_id,
+                )
+                relation_instance.properties = r.properties
+                session.add(relation_instance)
+                session.commit()
+
+    def delete(
+        self,
+        entity_names: Optional[List[str]] = None,
+        relation_names: Optional[List[str]] = None,
+        properties: Optional[dict] = None,
+        ids: Optional[List[str]] = None,
+    ) -> None:
+        """Delete matching data."""
+        with Session(self._engine) as session:
+            # 1. Delete relations
+            relation_stmt = delete(self._relation_model)
+            if ids:
+                relation_stmt = relation_stmt.filter(
+                    self._relation_model.source_id.in_(ids)
+                    | self._relation_model.target_id.in_(ids)
+                )
+            if entity_names:
+                relation_stmt = relation_stmt.filter(
+                    self._relation_model.source.has(name=entity_names)
+                    | self._relation_model.target.has(name=entity_names)
+                )
+            if relation_names:
+                relation_stmt = relation_stmt.filter(
+                    self._relation_model.label.in_(relation_names)
+                )
+            if properties:
+                for key, value in properties.items():
+                    relation_stmt = relation_stmt.filter(
+                        self._relation_model.source.has(
+                            self._node_model.properties[key] == value
+                        )
+                        | self._relation_model.target.has(
+                            self._node_model.properties[key] == value
+                        )
+                    )
+            session.execute(relation_stmt)
+
+            # 2. Delete nodes
+            entity_stmt = delete(self._node_model)
+            if ids:
+                entity_stmt = entity_stmt.filter(self._node_model.id.in_(ids))
+            if entity_names:
+                entity_stmt = entity_stmt.filter(
+                    self._node_model.name.in_(entity_names)
+                )
+            if properties:
+                for key, value in properties.items():
+                    entity_stmt = entity_stmt.filter(
+                        self._node_model.properties[key] == value
+                    )
+            session.execute(entity_stmt)
+            session.commit()
+
+    def structured_query(
+        self, query: str, param_map: Optional[Dict[str, Any]] = None
+    ) -> Any:
+        """Query the graph store with statement and parameters."""
+        raise NotImplementedError("PostgreSQL does not support cypher queries.")
+
+    def vector_query(
+        self, query: VectorStoreQuery, **kwargs: Any
+    ) -> Tuple[List[LabelledNode], List[float]]:
+        """Query the graph store with a vector store query."""
+        with Session(self._engine) as session:
+            result = (
+                session.query(
+                    self._node_model,
+                    self._node_model.embedding.cosine_distance(
+                        query.query_embedding
+                    ).label("embedding_distance"),
+                )
+                .filter(self._node_model.name.is_not(None))
+                .order_by(sql.asc("embedding_distance"))
+                .limit(query.similarity_top_k)
+                .all()
+            )
+
+            nodes = []
+            scores = []
+            for node, score in result:
+                nodes.append(
+                    EntityNode(
+                        name=node.name,
+                        label=node.label,
+                        properties=remove_empty_values(node.properties),
+                    )
+                )
+                scores.append(score)
+            return nodes, scores

@@ -2,17 +2,18 @@
 import json
 from typing import Tuple, Optional, List, Dict, Any
 from sqlalchemy import (
+    Text,
     create_engine,
     Column,
     Integer,
     String,
     DateTime,
-    JSON,
     TEXT,
     ForeignKey,
     sql,
     delete,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     Session,
     declarative_base,
@@ -116,7 +117,7 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
             text = Column(TEXT, nullable=True)
             name = Column(String(512), nullable=True)
             label = Column(String(512), nullable=False, default="node")
-            properties = Column(JSON, default={})
+            properties = Column(JSONB(astext_type=Text()), default={})
             embedding = Column(Vector(self._embedding_dim))
 
         class RelationModel(BaseMixin, Base):
@@ -125,7 +126,7 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
             label = Column(String(512), nullable=False)
             source_id = Column(String(512), ForeignKey(f"{self._node_table_name}.id"))
             target_id = Column(String(512), ForeignKey(f"{self._node_table_name}.id"))
-            properties = Column(JSON, default={})
+            properties = Column(JSONB(astext_type=Text()), default={})
 
             source = relationship("NodeModel", foreign_keys=[source_id])
             target = relationship("NodeModel", foreign_keys=[target_id])
@@ -145,7 +146,7 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
             query = session.query(self._node_model)
             if properties:
                 for key, value in properties.items():
-                    query = query.filter(self._node_model.properties[key] == value)
+                    query = query.filter(self._node_model.properties[key].astext == value)
             if ids:
                 query = query.filter(self._node_model.id.in_(ids))
 
@@ -195,12 +196,12 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
             if properties:
                 for key, value in properties.items():
                     query = query.filter(
-                        (self._relation_model.properties[key] == value)
+                        (self._relation_model.properties[key].astext == value)
                         | self._relation_model.source.has(
-                            self._node_model.properties[key] == value
+                            self._node_model.properties[key].astext == value
                         )
                         | self._relation_model.target.has(
-                            self._node_model.properties[key] == value
+                            self._node_model.properties[key].astext == value
                         )
                     )
             if entity_names:
@@ -373,9 +374,10 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                     | self._relation_model.target_id.in_(ids)
                 )
             if entity_names:
-                relation_stmt = relation_stmt.filter(
-                    self._relation_model.source.has(name=entity_names)
-                    | self._relation_model.target.has(name=entity_names)
+                for entity_name in entity_names:
+                    relation_stmt = relation_stmt.filter(
+                        self._relation_model.source.has(name=entity_name)
+                        | self._relation_model.target.has(name=entity_name)
                 )
             if relation_names:
                 relation_stmt = relation_stmt.filter(
@@ -385,10 +387,10 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                 for key, value in properties.items():
                     relation_stmt = relation_stmt.filter(
                         self._relation_model.source.has(
-                            self._node_model.properties[key] == value
+                            self._node_model.properties[key].astext == value
                         )
                         | self._relation_model.target.has(
-                            self._node_model.properties[key] == value
+                            self._node_model.properties[key].astext == value
                         )
                     )
             session.execute(relation_stmt)
@@ -404,7 +406,7 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
             if properties:
                 for key, value in properties.items():
                     entity_stmt = entity_stmt.filter(
-                        self._node_model.properties[key] == value
+                        self._node_model.properties[key].astext == value
                     )
             session.execute(entity_stmt)
             session.commit()

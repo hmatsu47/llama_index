@@ -67,3 +67,4 @@ class TestPostgresPropertyGraphStore(TestCase):
         assert len(g.get(ids=[self.e1.id])) == 1
         assert len(g.get(ids=[self.e1.id, self.e2.id])) == 2
         assert len(g.get(properties={"p1": "v1"})) == 1
+        

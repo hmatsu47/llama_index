@@ -61,7 +61,7 @@ class PostgresGraphStore(GraphStore):
         relation_table_name: str = "relations",
     ) -> None:
         self._engine = create_engine(db_connection_string)
-        check_db_availability(self._engine)
+        check_db_availability(self._engine, check_vector=True)
 
         self._entity_table_name = entity_table_name
         self._relation_table_name = relation_table_name

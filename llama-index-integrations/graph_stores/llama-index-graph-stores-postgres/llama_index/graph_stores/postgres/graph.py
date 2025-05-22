@@ -33,7 +33,7 @@ WITH RECURSIVE PATH AS
    WHERE r.subject_id IN
        (SELECT id
         FROM {entity_table}
-        WHERE name IN :subjs )
+        WHERE name = ANY(:subjs) )
    UNION ALL SELECT p.depth + 1,
                     r.subject_id,
                     r.object_id,

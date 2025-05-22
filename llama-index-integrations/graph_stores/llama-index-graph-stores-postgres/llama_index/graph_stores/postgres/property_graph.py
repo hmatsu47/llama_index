@@ -46,7 +46,7 @@ WITH RECURSIVE PATH AS
           r.label,
           r.properties
    FROM {relation_table} r
-   WHERE r.source_id IN :ids
+   WHERE r.source_id = ANY(:ids)
    UNION ALL SELECT p.depth + 1,
                     r.source_id,
                     r.target_id,
@@ -81,7 +81,7 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
     def __init__(
         self,
         db_connection_string: str,
-        embedding_dim: int = 1536,
+        embedding_dim: int = 1024,
         node_table_name: str = "pg_nodes",
         relation_table_name: str = "pg_relations",
         drop_existing_table: bool = False,
@@ -278,19 +278,19 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                     id=row["e1_id"],
                     name=row["e1_name"],
                     label=row["e1_label"],
-                    properties=json.loads(row["e1_properties"]),
+                    properties=row["e1_properties"],
                 )
                 target = EntityNode(
                     id=row["e2_id"],
                     name=row["e2_name"],
                     label=row["e2_label"],
-                    properties=json.loads(row["e2_properties"]),
+                    properties=row["e2_properties"],
                 )
                 relation = Relation(
                     label=row["rel_label"],
                     source_id=source.id,
                     target_id=target.id,
-                    properties=json.loads(row["rel_properties"]),
+                    properties=row["rel_properties"],
                 )
                 triplets.append([source, relation, target])
         return triplets

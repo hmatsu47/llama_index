@@ -447,4 +447,3 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                 )
                 scores.append(score)
             return nodes, scores
-        

@@ -1577,7 +1577,7 @@ wheels = [
 
 [[package]]
 name = "llama-index-graph-stores-postgres"
-version = "0.1.5"
+version = "0.1.6"
 source = { editable = "." }
 dependencies = [
     { name = "llama-index-core" },

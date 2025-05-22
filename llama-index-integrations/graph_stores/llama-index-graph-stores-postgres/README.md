@@ -26,19 +26,26 @@ Simple example to use `PostgresPropertyGraphStore`:
 from llama_index.core import PropertyGraphIndex, Settings, SimpleDirectoryReader
 from llama_index.embeddings.bedrock import BedrockEmbedding, Models
 from llama_index.llms.bedrock_converse import BedrockConverse
-from llama_index.core.indices.property_graph import ImplicitPathExtractor, SimpleLLMPathExtractor
+from llama_index.core.indices.property_graph import (
+    ImplicitPathExtractor,
+    SimpleLLMPathExtractor,
+)
 from llama_index.graph_stores.postgres import PostgresPropertyGraphStore
 
-documents = SimpleDirectoryReader(
-    "../../../examples/data/paul_graham/"
-).load_data()
+documents = SimpleDirectoryReader("../../../examples/data/paul_graham/").load_data()
 
 graph_store = PostgresPropertyGraphStore(
     db_connection_string="postgresql://user:password@host:5432/dbname",
 )
 
-llm=BedrockConverse(model="us.anthropic.claude-3-7-sonnet-20250219-v1:0", region_name="us-west-2", temperature=0.0)
-embed_model=BedrockEmbedding(model_name=Models.TITAN_EMBEDDING_V2_0, region_name="us-west-2")
+llm = BedrockConverse(
+    model="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
+    region_name="us-west-2",
+    temperature=0.0,
+)
+embed_model = BedrockEmbedding(
+    model_name=Models.TITAN_EMBEDDING_V2_0, region_name="us-west-2"
+)
 
 Settings.llm = llm
 Settings.embed_model = embed_model

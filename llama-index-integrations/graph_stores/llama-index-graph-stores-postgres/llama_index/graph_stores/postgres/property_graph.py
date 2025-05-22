@@ -135,7 +135,7 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
             Base.metadata.drop_all(self._engine)
         Base.metadata.create_all(self._engine)
         return NodeModel, RelationModel
-        
+
     def get(
         self,
         properties: Optional[dict] = None,
@@ -236,7 +236,7 @@ class PostgresPropertyGraphStore(PropertyGraphStore):
                 )
                 triplets.append([source, relation, target])
             return triplets
-            
+
     def get_rel_map(
         self,
         graph_nodes: List[LabelledNode],
